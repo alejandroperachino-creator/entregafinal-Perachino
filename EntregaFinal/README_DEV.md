@@ -1,25 +1,27 @@
-# README_DEV — Guía para desarrolladores
+# README_DEV — Guía rápida del proyecto 
 
-Este README pequeño y directo está pensado para que cualquier desarrollador que abra este proyecto entienda rápidamente la estructura, las piezas clave y cómo realizar cambios habituales (p. ej. ajustar probabilidades de crítico). Está en español y contiene punteros a los archivos más relevantes y ejemplos prácticos.
+Este README es corto y al toque. La idea es que abras el proyecto, te ubiques rápido y puedas meter mano en lo básico (balance de pelea, estilos y datos). Todo está en vanilla HTML/CSS/JS.
 
 ---
 ## Resumen rápido
-- Tecnologías: HTML, CSS y JavaScript . No hay build system.
-- Páginas principales:
-  - `Personajes/` — listado de poersonajes y datos JSON.
+- **Tecnologías**: HTML, CSS y JavaScript. No hay build system.
+- **Páginas principales**:
+  - `Personajes/` — listado de personajes y datos JSON.
   - `Seleccion/` — selector de dos luchadores y simulador de pelea.
-- Librerías externas (CDN): SweetAlert2 (modales) y Toastify (estilos, aunque el sistema de toasts en la pelea está implementado en DOM).
+- **Librerías externas** (CDN): SweetAlert2 (modales) y Toastify (toasts de combate).
+- **Navegadores compatibles**: Chrome 80+, Firefox 75+, Safari 13+, Edge 80+
 
 ---
-## Autor y contribución (para entrega)
 
-Qué implementé :
-- Implementé la interfaz de selección y las tarjetas de personaje en `Seleccion/index.html` y `Personajes/index.html`.
-- Implementé la lógica de combate en `Seleccion/script.js` (turnos, cálculo de daño, fallos, críticos y especiales).
-- Integré la barra de HP que se actualiza en tiempo real, números flotantes de daño y toasts inline para feedback visual.
-- Ajusté los estilos en `Seleccion/style.css` y `Personajes/style.css` para que las cartas y la caja de combate se vean correctamente en pantalla.
+**Qué hice:**
+- Hice la pantalla de selección y el listado de personajes (`Seleccion/index.html` y `Personajes/index.html`).
+- Programé la pelea en `Seleccion/script.js` (turnos, daño, fallos, críticos y especiales).
+- Agregué la barra de HP en vivo, números de daño y toasts con Toastify para el feedback.
+- Ajusté estilos en `Seleccion/style.css` y `Personajes/style.css` para que todo se vea decente.
+- Armé un `CONFIG` al inicio del script para poder balancear más fácil.
+- Mejoré un poco el rendimiento usando creación de nodos y `DocumentFragment`.
 
-Nota para el profesor:  desarrollé y probé los cambios manualmente en el navegador. Este README explica las decisiones de diseño y los puntos donde se pueden ajustar parámetros de balance.
+**Nota para el profe:** Desarrollé y probé los cambios a mano en el navegador. Acá explico las decisiones de diseño y dónde ajustar parámetros de balance.
 
 ---
 ## Estructura de archivos (puntos de interés)
@@ -29,43 +31,49 @@ Nota para el profesor:  desarrollé y probé los cambios manualmente en el naveg
 - `Personajes/saints.json` — datos de los personajes (nombre, constelación, tipo de armadura, rango y `skills` con `main`, `special` e `image`).
 
 - `Seleccion/index.html` — interfaz de selección y batalla. Contiene la grilla con `#fighterA`, `#damage-box` y `#fighterB`.
-- `Seleccion/script.js` — lógica principal: carga los `saints`, render del roster en esta página, selección de A/B, simulación de combate, toasts inline, números flotantes y modal de ganador.
+- `Seleccion/script.js` — lógica principal: carga los `saints`, render del roster, selección A/B, pelea, toasts (Toastify), números flotantes y modal del ganador.
 - `Seleccion/style.css` — estilos para la grilla de batalla, tarjetas laterales, caja de daño central, barra de HP, animaciones de números flotantes y responsive.
 
 ---
-## Flujo funcional (cómo interactúan los archivos)
-1. El roster se muestra (ya sea desde `Personajes/` o desde `Seleccion/` que también carga el JSON).
-2. En `Seleccion/` el usuario selecciona dos personajes (primero A, luego B). Los previews se muestran con `HP` y `nombre`.
-3. Al pulsar `Pelear`, `Seleccion/script.js` ejecuta `fight()` que corre un bucle asíncrono de turnos:
-   - decide atacante/defensor
-   - calcula daño (incluye `miss`, `crit`, `special`)
-   - actualiza la barra de HP y muestra toasts/números flotantes
-4. Al terminar, muestra un modal con el ganador (SweetAlert). Opciones: `Rematch` o `Reiniciar`.
+## Cómo probar rápido
+1. Abrí `Personajes/index.html` o `Seleccion/index.html` en el navegador.
+2. Si el JSON no carga por CORS en `file://`, levantá un server estático (por ejemplo: `npx http-server`) o usá Live Server.
+3. Elegí dos personajes y tocá “Pelear”. Fijate en los toasts (Toastify) y en la barra de HP.
+
+---
+## Flujo rápido
+- Se carga el roster desde `saints.json`.
+- Seleccionás A y B, se muestran previews con HP y nombre.
+- `Pelear` corre turnos con fallos, críticos y especiales, mostrando toasts.
+- Al final, aparece un modal (SweetAlert) con el ganador y opciones.
 
 ---
 ## Puntos clave del código y dónde hacer cambios comunes
 A continuación se listan los lugares más habituales donde trabajarás y qué buscar:
 
-### 1 Cambiar valores de combate (hp base, daño base, chances)
-Archivo: `Seleccion/script.js`
-- HP base al cargar personajes (en `loadSaints()`):
-  ```js
-  hp: 200 + (s.armor_type === 'Gold' ? 20 : 0)
-  ```
-  Cambia `200` o el bonus `20` si quieres otro balance inicial.
+### 1. Cambiar valores de combate (hp base, daño base, chances)
+**Archivo**: `Seleccion/script.js`
 
-- Daño base / estadística de ataque en `fight()` al clonar los luchadores:
-  ```js
-  const a = { ...selected.a, hp: selected.a.hp, baseAtk: 12 + (selected.a.armor_type === 'Gold' ? 6 : 0) };
-  ```
-  Cambia `12` o el bonus `6` para ajustar el poder base.
+**⚡ MÉTODO RECOMENDADO - Usar CONFIG (ya implementado):**
+El sistema de configuración centralizada está ubicado al inicio del archivo:
 
-- Probabilidades y multiplicadores (en `performAttack()`):
-  - Probabilidad de fallo: `8%` (if r < 0.08)
-  - Probabilidad de crítico: `12%` (if r > 0.88)
-  - Multiplicador de crítico: `1.7` (damage = Math.floor(damage * 1.7))
+```js
+const CONFIG = {
+  HP_BASE: 200,          // Vida base
+  HP_GOLD_BONUS: 20,     // Bonus HP para armaduras Gold  
+  ATK_BASE: 12,          // Ataque base
+  ATK_GOLD_BONUS: 6,     // Bonus ataque para armaduras Gold
+  SPECIAL_BONUS: 6,      // Daño extra del ataque especial
+  MISS_CHANCE: 0.08,     // 8% probabilidad de fallo
+  CRIT_CHANCE: 0.12,     // 12% probabilidad de crítico
+  CRIT_MULTIPLIER: 1.7   // Multiplicador de daño crítico
+};
+```
 
-  Ejemplo: para reducir la probabilidad de crítico al `6%`, edita la condición `if (r > 0.88)` a `if (r > 0.94)` — o mejor, convierte estos valores a constantes (ver ejemplo práctico abajo).
+**Ejemplos de cambios comunes:**
+- Para reducir críticos al 6%: `CRIT_CHANCE: 0.06`
+- Para aumentar HP base: `HP_BASE: 250`
+- Para cambiar multiplicador de crítico: `CRIT_MULTIPLIER: 2.0`
 
 ### 2) Cambiar la apariencia de las cartas y el tamaño de las imágenes
 Archivo: `Seleccion/style.css` y `Personajes/style.css`
@@ -79,16 +87,19 @@ Archivo: `Seleccion/style.css`
 
 ### 4) Mejorar/ajustar toasts o números flotantes
 Archivo: `Seleccion/script.js` y `Seleccion/style.css`
-- `showToast(text, type)` crea spans `.inline-toast` en `#inline-toasts` dentro de la `damage-box`.
+- `showToast(text, type)` ahora usa Toastify (CDN). Tipos soportados: `hit`, `special`, `crit`, `miss` con estilos de color.
 - `.damage-float` (CSS) controla la animación visual. Cambia las duraciones en CSS (`transition`) y en JS (`setTimeout`) para ajustar sincronización.
 
 ---
-## Ejemplo práctico: reducir la probabilidad de crítico (mejorar mantenibilidad)
-Recomendación: extraer constantes al principio de `Seleccion/script.js` en lugar de tocar números repartidos por el código.
+## Ejemplo práctico: cambiar probabilidad de crítico
+**Nota**: El sistema CONFIG ya está implementado, por lo que este ejemplo refleja el estado actual del código.
 
-1) En la parte superior de `Seleccion/script.js` (después de las referencias DOM), añade un bloque `CONFIG` como este:
+**Pasos para modificar la probabilidad de crítico:**
+
+1. Abrir `Seleccion/script.js`
+2. Localizar el bloque CONFIG (líneas 15-25 aproximadamente):
+
 ```js
-// Configuración de combate (ajusta aquí para balancear)
 const CONFIG = {
   HP_BASE: 200,
   HP_GOLD_BONUS: 20,
@@ -96,49 +107,42 @@ const CONFIG = {
   ATK_GOLD_BONUS: 6,
   SPECIAL_BONUS: 6,
   MISS_CHANCE: 0.08,
-  CRIT_CHANCE: 0.12,
+  CRIT_CHANCE: 0.12, // <-- cambiar este valor
   CRIT_MULTIPLIER: 1.7
 };
 ```
 
-2) Reemplaza los literales en el código por referencias a `CONFIG`. Ejemplos:
-- HP al cargar:
-```js
-hp: CONFIG.HP_BASE + (s.armor_type === 'Gold' ? CONFIG.HP_GOLD_BONUS : 0)
-```
-- baseAtk:
-```js
-const a = { ...selected.a, hp: selected.a.hp, baseAtk: CONFIG.ATK_BASE + (selected.a.armor_type === 'Gold' ? CONFIG.ATK_GOLD_BONUS : 0) };
-```
-- comprobaciones de fallo/crítico dentro de `performAttack()`:
-```js
-if (r < CONFIG.MISS_CHANCE) { /* miss */ }
-if (r > 1 - CONFIG.CRIT_CHANCE) { /* crit */ }
-```
-- multiplicador:
-```js
-if (isCrit) damage = Math.floor(damage * CONFIG.CRIT_MULTIPLIER);
-```
+3. Modificar la línea `CRIT_CHANCE: 0.12` a `CRIT_CHANCE: 0.06` (para 6% de críticos)
+4. Guardar el archivo
+5. Refrescar `Seleccion/index.html` en el navegador y probar una pelea para verificar el cambio
 
-3) Para reducir la probabilidad de crítico al 6% simplemente cambia `CRIT_CHANCE: 0.06` en el `CONFIG`.
-
-Este patrón centraliza las reglas de balance y facilita experimentación.
+**Otros ejemplos de modificaciones rápidas:**
+- HP más alto: `HP_BASE: 300`
+- Sin críticos: `CRIT_CHANCE: 0`
+- Críticos devastadores: `CRIT_MULTIPLIER: 3.0`
 
 ---
 ## Consejos para testing rápido
-- Local: abre `Seleccion/index.html` en el navegador con ruta de archivos (no necesita servidor). Si `fetch('../Personajes/saints.json')`
+- **Local**: Abre `Seleccion/index.html` en el navegador con ruta de archivos (no necesita servidor). Si `fetch('../Personajes/saints.json')` falla por CORS/file:// en algunos navegadores, abre con un servidor estático (ej. `npx http-server` o usar Live Server en VSCode).
 
-- Probar edge cases:
+- **Probar edge cases**:
   - JSON con datos incompletos (el fallback de imagen debe activarse).
   - Ejecutar `Pelear` repetidamente y confirmar que `Rematch` no duplica listeners ni genera fugas de memoria.
   - Probar tamaños de pantalla para verificar media queries y que no haya scroll horizontal.
 
+- **Debugging común**:
+  - Si las imágenes no cargan: verificar rutas en `saints.json` y que las imágenes existan en `../asetts/`
+  - Si el combate no inicia: verificar que ambos luchadores estén seleccionados
+- Si los toasts no aparecen: verificar que Toastify cargó correctamente (revisa la consola y los enlaces CDN en `Seleccion/index.html`).
+
 ---
 ## Posibles mejoras futuras (ideas)
-- Extraer constantes en `Seleccion/script.js` (ya mostrado) y en `Seleccion/style.css` usar variables CSS (`--side-w`, `--gap`) para facilitar ajustes.
-- Reemplazar `innerHTML` en `updateSelectedUI()` por DOM creation para evitar problemas de escape/seguridad.
-- Añadir pruebas unitarias para la función de cálculo de daño (ej. exportarla y probar con mocha/jest).
-- Añadir `prefers-reduced-motion` para respetar a usuarios que deseen menos animación.
+- **Pendientes**:
+  - Usar variables CSS (`--side-w`, `--gap`) en `Seleccion/style.css` para facilitar ajustes
+  - Añadir pruebas unitarias para la función `calculateAttack()` (ej. exportarla y probar con mocha/jest)
+  - Añadir `prefers-reduced-motion` para respetar a usuarios que deseen menos animación
+  - Implementar un sistema de guardado de configuración personalizada
+  - Añadir efectos de sonido para ataques y críticos
 
 ---
 ## Contacto rápido dentro del repo
@@ -171,3 +175,37 @@ const CONFIG = {
 3. Modificar la línea `CRIT_CHANCE: 0.12` a `CRIT_CHANCE: 0.06` y guardar.
 
 4. Refrescar `Seleccion/index.html` en el navegador y probar una pelea para comprobar el cambio.
+
+---
+## Troubleshooting (Solución de problemas comunes)
+
+### Error: "Cannot read property 'image' of undefined"
+- **Causa**: Datos faltantes en `saints.json` 
+- **Solución**: Verificar que todos los personajes tengan la estructura completa: `skills: { main, special, image }`
+
+### Las imágenes no cargan
+- **Causa**: Rutas incorrectas o archivos faltantes
+- **Solución**: 
+  1. Verificar que las imágenes existan en la carpeta `asetts/`
+  2. Comprobar que las rutas en `saints.json` sean correctas (relativas: `../asetts/`)
+  3. Si usas servidor local, verificar que sirva archivos estáticos
+
+### El combate se queda congelado
+- **Causa**: Bucle infinito en combat loop
+- **Solución**: Verificar que `maxRounds` esté definido (valor por defecto: 200)
+
+### Los toasts no aparecen
+- **Causa**: Toastify no cargó o el CDN falló
+- **Solución**: Verificá los enlaces CDN de Toastify en `Seleccion/index.html` y revisá la consola por errores
+
+### SweetAlert no muestra el modal del ganador
+- **Causa**: Librería no cargada
+- **Solución**: Verificar que el CDN de SweetAlert2 esté incluido en el HTML
+
+---
+## Información del proyecto
+
+- **Última actualización**: Octubre 2025
+- **Versión**: 1.2 (con optimizaciones de rendimiento y CONFIG centralizado)
+- **Compatibilidad**: Navegadores modernos con soporte ES6+
+- **Tamaño del proyecto**: ~15KB (sin imágenes)

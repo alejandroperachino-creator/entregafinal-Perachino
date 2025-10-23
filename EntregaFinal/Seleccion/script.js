@@ -50,8 +50,8 @@ const CONFIG = {
  */
 function calculateAttack(attacker, defender, useSpecial, r) {
   const attackName = useSpecial ? attacker.skills.special : attacker.skills.main;
-  // variance equivalente a rand(-3,6)
-  const variance = Math.floor(Math.random() * (6 - (-3) + 1)) + (-3);
+  // varianza aleatoria entre -3 y 6 (mismo rango que rand(-3,6))
+  const variance = Math.floor(Math.random() * 10) - 3;
   let damage = attacker.baseAtk + variance + (useSpecial ? CONFIG.SPECIAL_BONUS : 0);
 
   if (r < CONFIG.MISS_CHANCE) {
@@ -88,41 +88,62 @@ function loadSaints() {
     });
 }
 
+/**
+ * Crea una tarjeta de personaje usando DOM creation en lugar de innerHTML
+ * @param {Object} saint - objeto del personaje
+ * @returns {HTMLElement} elemento DOM de la tarjeta
+ */
+function createCharacterCard(saint) {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  // Crear imagen con fallback
+  const img = document.createElement('img');
+  img.src = saint.skills && saint.skills.image ? saint.skills.image : '';
+  img.alt = saint.name;
+  img.addEventListener('error', () => {
+    img.onerror = null;
+    img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="140"><rect width="100%" height="100%" fill="%23071e32"/><text x="50%" y="50%" fill="%23eab308" font-size="14" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" dominant-baseline="middle">No disponible</text></svg>';
+  });
+
+  // Crear título
+  const title = document.createElement('h3');
+  title.textContent = saint.name;
+
+  // Crear información
+  const info = document.createElement('p');
+  info.textContent = `${saint.constellation} • ${saint.rank}`;
+
+  // Ensamblar tarjeta
+  card.appendChild(img);
+  card.appendChild(title);
+  card.appendChild(info);
+
+  // Agregar event listener
+  card.addEventListener('click', () => onSelect(saint));
+
+  return card;
+}
+
 function renderRoster() {
   rosterEl.innerHTML = '';
-  saints.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'card';
-
-    const img = document.createElement('img');
-    img.src = s.skills && s.skills.image ? s.skills.image : '';
-    img.alt = s.name;
-    // fallback SVG cuando la imagen no carga
-    img.addEventListener('error', () => {
-      img.onerror = null;
-      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="140"><rect width="100%" height="100%" fill="%23071e32"/><text x="50%" y="50%" fill="%23eab308" font-size="14" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" dominant-baseline="middle">No disponible</text></svg>';
-    });
-
-    const title = document.createElement('h3');
-    title.textContent = s.name;
-
-    const info = document.createElement('p');
-    info.textContent = `${s.constellation} • ${s.rank}`;
-
-    card.appendChild(img);
-    card.appendChild(title);
-    card.appendChild(info);
-
-    card.addEventListener('click', () => onSelect(s));
-    rosterEl.appendChild(card);
+  
+  // Usar DocumentFragment para mejor performance
+  const fragment = document.createDocumentFragment();
+  
+  saints.forEach(saint => {
+    const card = createCharacterCard(saint);
+    fragment.appendChild(card);
   });
+  
+  rosterEl.appendChild(fragment);
 }
 
 function onSelect(s) {
   // si los dos ya están seleccionados, no hacer nada
   if (selected.a && selected.b) return;
 
-  // Toggle selection before both are chosen
+  // Alternar selección antes de que ambos estén elegidos
   if (selected.a && selected.a.id === s.id) {
     // deseleccionar A si se hace clic en él de nuevo (permitido antes de que ambos estén establecidos)
     selected.a = null;
@@ -132,7 +153,7 @@ function onSelect(s) {
   } else if (!selected.a) {
     // seleccionar como A (primera selección)
     selected.a = { ...s };
-    // porcentar HP máximo para la vista previa
+    // configurar HP máximo para la vista previa
     selected.a.maxHp = selected.a.hp;
   } else if (!selected.b) {
     // seleccionar como B (segunda selección)
@@ -145,47 +166,18 @@ function onSelect(s) {
 }
 
 function updateSelectedUI() {
-  if (selected.a) {
-    fighterAEl.classList.remove('empty');
-    fighterAEl.innerHTML = `
-      <div class="fighter-preview">
-        <div class="preview-info">
-          <div class="hp-wrap">
-            <div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div>
-            <div class="hp-text">HP: ${selected.a.hp} / ${selected.a.maxHp}</div>
-          </div>
-          <div class="fighter-name"><strong>${selected.a.name}</strong></div>
-        </div>
-        <img src="${selected.a.skills.image}" alt="${selected.a.name}" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'84\' height=\'84\'><rect width=\'100%\' height=\'100%\' fill=\'%2307121a\'/><text x=\'50%\' y=\'50%\' fill=\'%23eab308\' font-size=\'10\' font-family=\'Arial, Helvetica, sans-serif\' text-anchor=\'middle\' dominant-baseline=\'middle\'>No img</text></svg>'">
-      </div>`;
-  } else {
-    fighterAEl.classList.add('empty');
-    fighterAEl.innerHTML = 'A: (ninguno)';
-  }
-  if (selected.b) {
-    fighterBEl.classList.remove('empty');
-    fighterBEl.innerHTML = `
-      <div class="fighter-preview">
-        <div class="preview-info">
-          <div class="hp-wrap">
-            <div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div>
-            <div class="hp-text">HP: ${selected.b.hp} / ${selected.b.maxHp}</div>
-          </div>
-          <div class="fighter-name"><strong>${selected.b.name}</strong></div>
-        </div>
-        <img src="${selected.b.skills.image}" alt="${selected.b.name}" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'84\' height=\'84\'><rect width=\'100%\' height=\'100%\' fill=\'%2307121a\'/><text x=\'50%\' y=\'50%\' fill=\'%23eab308\' font-size=\'10\' font-family=\'Arial, Helvetica, sans-serif\' text-anchor=\'middle\' dominant-baseline=\'middle\'>No img</text></svg>'">
-      </div>`;
-  } else {
-    fighterBEl.classList.add('empty');
-    fighterBEl.innerHTML = 'B: (ninguno)';
-  }
+  // Actualizar vista del luchador A
+  updateFighterUI(selected.a, fighterAEl, 'A: (ninguno)');
+  
+  // Actualizar vista del luchador B
+  updateFighterUI(selected.b, fighterBEl, 'B: (ninguno)');
 
+  // Habilitar botón de pelea solo si ambos luchadores están seleccionados
   fightBtn.disabled = !(selected.a && selected.b);
 
-  // si los dos están seleccionados, ocultar el roster para enfocarse en la pelea
+  // Controlar visibilidad del roster y modo batalla
   if (selected.a && selected.b) {
     rosterEl.style.display = 'none';
-    // opcionalmente agregar una clase al body/main para ajustar el diseño si es necesario
     document.body.classList.add('battle-only');
   } else {
     rosterEl.style.display = 'grid';
@@ -200,7 +192,7 @@ function log(msg) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-// update la barra de hp  
+// actualizar la barra de hp  
 function updatePreviewHPById(id, hp, maxHp) {
   // encontrar qué vista previa actualizar (A o B)
   const updateEl = (el) => {
@@ -212,10 +204,47 @@ function updatePreviewHPById(id, hp, maxHp) {
     text.textContent = `HP: ${Math.max(0, hp)} / ${maxHp}`;
   };
 
-  // checkear A
+  // verificar A
   if (selected.a && selected.a.id === id) updateEl(fighterAEl);
-  // checkear B
+  // verificar B
   if (selected.b && selected.b.id === id) updateEl(fighterBEl);
+}
+
+/**
+ * Crea el HTML para la vista previa de un luchador
+ * @param {Object} fighter - objeto del luchador con name, hp, maxHp, skills
+ * @returns {string} HTML string para la vista previa
+ */
+function createFighterPreviewHTML(fighter) {
+  const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84'><rect width='100%' height='100%' fill='%2307121a'/><text x='50%' y='50%' fill='%23eab308' font-size='10' font-family='Arial, Helvetica, sans-serif' text-anchor='middle' dominant-baseline='middle'>No img</text></svg>";
+  
+  return `
+    <div class="fighter-preview">
+      <div class="preview-info">
+        <div class="hp-wrap">
+          <div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div>
+          <div class="hp-text">HP: ${fighter.hp} / ${fighter.maxHp}</div>
+        </div>
+        <div class="fighter-name"><strong>${fighter.name}</strong></div>
+      </div>
+      <img src="${fighter.skills.image}" alt="${fighter.name}" onerror="this.onerror=null;this.src='${fallbackSvg}'">
+    </div>`;
+}
+
+/**
+ * Actualiza la UI de un luchador específico (A o B)
+ * @param {Object} fighter - objeto del luchador o null
+ * @param {HTMLElement} element - elemento DOM a actualizar
+ * @param {string} emptyText - texto a mostrar cuando no hay luchador
+ */
+function updateFighterUI(fighter, element, emptyText) {
+  if (fighter) {
+    element.classList.remove('empty');
+    element.innerHTML = createFighterPreviewHTML(fighter);
+  } else {
+    element.classList.add('empty');
+    element.innerHTML = emptyText;
+  }
 }
 
 async function fight() {
@@ -228,82 +257,74 @@ async function fight() {
   log(`Comienza la pelea: ${a.name} vs ${b.name}`);
 
   // utilidades internas
-  // Utilities for randomness
+  // Funciones de utilidad para aleatoriedad
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
   function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
 
   function showToast(text, type) {
-    // crear un toast simple en la esquina inferior derecha
-    // create inline toast inside damage-box -> #inline-toasts
-    const container = document.getElementById('inline-toasts');
-    if (!container) return;
-    const t = document.createElement('span');
-    t.className = 'inline-toast';
-    if (type) t.classList.add(type);
-    t.textContent = text;
-    container.appendChild(t);
-    // auto remover después de 1.5s
-    // auto-remove after a short duration
-    setTimeout(() => { t.style.opacity = '0'; setTimeout(()=> t.remove(), 300); }, 1400);
+    // Mostrar toast con Toastify (CDN cargado en index.html)
+    if (typeof Toastify !== 'function') return;
+    const optsByType = {
+      hit: {
+        background: 'linear-gradient(90deg,#2b9cff,#1f77d1)',
+        color: '#fff'
+      },
+      special: {
+        background: 'linear-gradient(90deg,#a179ff,#7b4cff)',
+        color: '#fff'
+      },
+      crit: {
+        background: 'linear-gradient(90deg,#ffcc00,#ffb300)',
+        color: '#111'
+      },
+      miss: {
+        background: 'rgba(255,255,255,0.06)',
+        color: '#eee',
+        className: 'toast-miss'
+      }
+    };
+    const style = optsByType[type] || optsByType.hit;
+    Toastify({
+      text,
+      duration: 1600,
+      gravity: 'bottom',
+      position: 'right',
+      close: false,
+      stopOnFocus: true,
+      style: { background: style.background, color: style.color, fontWeight: '800' },
+      className: style.className || ''
+    }).showToast();
   }
 
   function performAttack(attacker, defender) {
-  // Ahora delegamos el cálculo puro a `calculateAttack` para separar lógica y efectos.
-  const useSpecial = Math.random() < 0.2;
-  const r = Math.random();
-  const calc = calculateAttack(attacker, defender, useSpecial, r);
+    // Ahora delegamos el cálculo puro a `calculateAttack` para separar lógica y efectos.
+    const useSpecial = Math.random() < 0.2;
+    const r = Math.random();
+    const calc = calculateAttack(attacker, defender, useSpecial, r);
 
-  // Si falló, mostrar efectos visuales y salir temprano
-  if (calc.miss) {
-    const attackName = calc.attackName;
-    log(`${attacker.name} intenta ${attackName} pero falla!`);
-    showToast(`${attacker.name} falla ${attackName}`, 'miss');
+    // Si falló, mostrar efectos visuales y salir temprano
+    if (calc.miss) {
+      const attackName = calc.attackName;
+      log(`${attacker.name} intenta ${attackName} pero falla!`);
+      showToast(`${attacker.name} falla ${attackName}`, 'miss');
+      const targetEl = (selected.a && selected.a.id === defender.id) ? fighterAEl : fighterBEl;
+      createFloatingDamage(targetEl, 'Miss', 'miss');
+      return { miss: true };
+    }
+
+    // Aplicar el resultado calculado al defensor (mutación local del objeto de pelea)
+    const damage = calc.damage;
+    const isCrit = calc.isCrit;
+    defender.hp = calc.newDefender.hp;
+
+    // actualizar vista y mostrar efectos
+    updatePreviewHPById(defender.id, defender.hp, defender.maxHp || (defender.hp + damage));
     const targetEl = (selected.a && selected.a.id === defender.id) ? fighterAEl : fighterBEl;
-    createFloatingDamage(targetEl, 'Miss', 'miss');
-    // mantener la semántica original: devolver { miss: true }
-    return { miss: true };
-  }
-
-  // Aplicar el resultado calculado al defensor (mutación local del objeto de pelea)
-  const damage = calc.damage;
-  const isCrit = calc.isCrit;
-  defender.hp = calc.newDefender.hp;
-
-  // actualizar vista y mostrar efectos
-  updatePreviewHPById(defender.id, defender.hp, defender.maxHp || (defender.hp + damage));
-  const targetEl = (selected.a && selected.a.id === defender.id) ? fighterAEl : fighterBEl;
-  createFloatingDamage(targetEl, `-${damage}`, isCrit ? 'crit' : (useSpecial ? 'special' : 'hit'));
-  log(`${attacker.name} usa ${calc.attackName} ${isCrit ? '(CRIT) ' : ''}y hace ${damage} \u2192 ${defender.name} HP ${Math.max(0, defender.hp)}`);
-  showToast(`${attacker.name} usa ${calc.attackName} ${isCrit ? 'CRIT! ' : ''}-${damage}`, isCrit ? 'crit' : (useSpecial ? 'special' : 'hit'));
-  return { damage, isCrit };
-  }
-
-  /**
-   * calculateAttack - Función pura que calcula el resultado de un ataque sin efectos secundarios.
-   * @param {Object} attacker - objeto atacante (debe contener baseAtk y skills)
-   * @param {Object} defender - objeto defensor (debe contener hp)
-   * @param {boolean} useSpecial - si se está usando el ataque especial
-   * @param {number} r - número aleatorio en [0,1) para determinar miss/crit
-   * @returns {{ miss: boolean, damage?: number, isCrit?: boolean, attackName: string, newDefender: Object }}
-   */
-  function calculateAttack(attacker, defender, useSpecial, r) {
-    const attackName = useSpecial ? attacker.skills.special : attacker.skills.main;
-    const variance = rand(-3, 6);
-    let damage = attacker.baseAtk + variance + (useSpecial ? CONFIG.SPECIAL_BONUS : 0);
-
-    if (r < CONFIG.MISS_CHANCE) {
-      return { miss: true, attackName, newDefender: { ...defender } };
-    }
-
-    let isCrit = false;
-    if (r > 1 - CONFIG.CRIT_CHANCE) {
-      isCrit = true;
-      damage = Math.floor(damage * CONFIG.CRIT_MULTIPLIER);
-    }
-
-    const newDefender = { ...defender, hp: defender.hp - damage };
-    return { miss: false, damage, isCrit, attackName, newDefender };
+    createFloatingDamage(targetEl, `-${damage}`, isCrit ? 'crit' : (useSpecial ? 'special' : 'hit'));
+    log(`${attacker.name} usa ${calc.attackName} ${isCrit ? '(CRIT) ' : ''}y hace ${damage} → ${defender.name} HP ${Math.max(0, defender.hp)}`);
+    showToast(`${attacker.name} usa ${calc.attackName} ${isCrit ? 'CRIT! ' : ''}-${damage}`, isCrit ? 'crit' : (useSpecial ? 'special' : 'hit'));
+    return { damage, isCrit };
   }
 
   // crear daño flotante sobre la imagen del luchador
@@ -327,12 +348,12 @@ async function fight() {
     setTimeout(() => { if (floatEl && floatEl.parentNode) floatEl.parentNode.removeChild(floatEl); }, 1000);
   }
 
-  // Random para quien empieza
+  // Aleatorio para quien empieza
   let attacker = Math.random() < 0.5 ? a : b;
   let defender = attacker === a ? b : a;
   log(`${attacker.name} toma la iniciativa.`);
 
-  // loop de pelea hasta que uno muere o se alcanza el máximo de rondas
+  // bucle de pelea hasta que uno muere o se alcanza el máximo de rondas
   let rounds = 0;
   const maxRounds = 200;
   while (a.hp > 0 && b.hp > 0 && rounds < maxRounds) {
@@ -351,15 +372,14 @@ async function fight() {
   // mostrar modal con el ganador usando SweetAlert2
   if (window.Swal) {
     Swal.fire({
-      position: 'bottom-end',
-      width: 380,
+      position: 'center',
+      width: 620,
       title: `Ganador: ${winner.name}`,
-        html: `<div style="display:flex;gap:12px;align-items:center"><img src="${winner.skills.image}" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'><rect width=\'100%\' height=\'100%\' fill=\'%2307121a\'/><text x=\'50%\' y=\'50%\' fill=\'%23eab308\' font-size=\'10\' font-family=\'Arial, Helvetica, sans-serif\' text-anchor=\'middle\' dominant-baseline=\'middle\'>No img</text></svg>'" style="width:80px;height:80px;object-fit:cover;border-radius:8px"><div style="text-align:left"><strong>${winner.name}</strong><div style="font-size:13px;color:#ddd">${winner.constellation} • ${winner.rank}</div></div></div>`,
+        html: `<div style="display:flex;gap:16px;align-items:center;justify-content:center"><img src="${winner.skills.image}" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'240\' height=\'240\'><rect width=\'100%\' height=\'100%\' fill=\'%2307121a\'/><text x=\'50%\' y=\'50%\' fill=\'%23eab308\' font-size=\'14\' font-family=\'Arial, Helvetica, sans-serif\' text-anchor=\'middle\' dominant-baseline=\'middle\'>No img</text></svg>'" style="width:240px;height:240px;object-fit:contain;border-radius:10px"><div style="text-align:left"><strong>${winner.name}</strong><div style="font-size:14px;color:#ddd">${winner.constellation} • ${winner.rank}</div></div></div>`,
       showCancelButton: true,
       confirmButtonText: 'Rematch',
       cancelButtonText: 'Reiniciar',
-      allowOutsideClick: false,
-      backdrop: false
+      allowOutsideClick: false
     }).then(result => {
       if (result.isConfirmed) {
             // Rematch: reiniciar la pelea con los mismos luchadores

@@ -57,9 +57,9 @@ h1 {
 /* --- Estilos para la imagen del personaje --- */
 .character-image {
     width: 100%;
-    aspect-ratio: 1 / 1; /* square image box */
-    height: 120px; /* smaller square */
-    object-fit: contain; /* shrink to fit without cropping */
+    aspect-ratio: 1 / 1; /* cuadrado */
+    height: 120px; /* cuadrado */
+    object-fit: contain; /* achicar para no cortar la imagen */
     display: block;
     border-bottom: 2px solid rgba(255, 255, 255, 0.06);
     background: rgba(0,0,0,0.04);
